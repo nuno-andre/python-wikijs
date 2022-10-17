@@ -22,7 +22,6 @@ class PageMixin(WikiJsProtocol):
         path:   'Optional[str]' = None,
         locale: 'Optional[str]' = None,
     ) -> 'List[Dict[str, Any]]':
-
         _query = '''
             query Page(
                 $query: String!,
@@ -42,6 +41,7 @@ class PageMixin(WikiJsProtocol):
                 }
             }
         '''
+
         params = dict(query=query, path=path, locale=locale)
 
         return self.execute(_query, params)['pages']['search']['results']

@@ -4,9 +4,12 @@ from functools import cached_property
 from gql import gql, Client
 
 from gql.transport.aiohttp import AIOHTTPTransport
+from gql.transport.exceptions import TransportQueryError
 from graphql.error.graphql_error import GraphQLError
 
 from .exceptions import ClientError, raise_exc
+
+from .asset import AssetMixin
 from .page import PageMixin
 from .system import SystemMixin
 from .user import UserMixin
@@ -15,7 +18,7 @@ if TYPE_CHECKING:
     from typing import Dict, Optional
 
 
-class WikiJs(PageMixin, SystemMixin, UserMixin):
+class WikiJs(AssetMixin, PageMixin, SystemMixin, UserMixin):
     def __init__(self, endpoint, api_key) -> None:
         self.endpoint = endpoint
         self.api_key = api_key
@@ -31,6 +34,8 @@ class WikiJs(PageMixin, SystemMixin, UserMixin):
             return self.client.execute(gql(query), variable_values=params)
         except GraphQLError as e:
             raise ClientError(e.message) from None
+        except TransportQueryError as e:
+            raise ClientError(e.errors) from None
 
     def check_response_result(self, result: 'Dict[str, Any]') -> bool:
         if not result['succeeded']:
