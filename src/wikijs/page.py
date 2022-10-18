@@ -85,10 +85,11 @@ class PageMixin(WikiJsProtocol):
             }
         ''' % PAGE_FIELDS
 
-        params = dict(id=id)
+        params = dict(id=int(id))
 
-        return self.execute(query, params)['pages']['single']
-
+        resp = self.execute(query, params)['pages']['single']
+        resp['tags'] = [t['tag'] for t in resp['tags']]
+        return resp
 # endregion
 
 # region PAGE MUTATION
@@ -236,7 +237,7 @@ class PageMixin(WikiJsProtocol):
         '''
 
         params = dict(
-            id=id, title=title, content=content, description=description,
+            id=int(id), title=title, content=content, description=description,
             editor=editor, isPublished=is_published, isPrivate=is_private,
             locale=locale, path=path, publishEndDate=publish_end_date,
             publishStartDate=publish_start_date, scriptCss=script_css,
