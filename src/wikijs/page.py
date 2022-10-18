@@ -1,11 +1,17 @@
 from typing import TYPE_CHECKING, Any
-from .typing import WikiJsProtocol
+from .typing import WikiJsProtocol, unset
 
 
 if TYPE_CHECKING:
     from typing import List, Dict, Optional
-    from .typing import PageOrderBy, PageOrderByDirection
+    from .typing import Nullable, Unforced, PageOrderBy, PageOrderByDirection
 
+
+# TODO: toc
+PAGE_FIELDS = ('id path hash title description isPrivate isPublished privateNS '
+               'publishStartDate publishEndDate tags { tag } content render contentType '
+               'createdAt updatedAt editor locale scriptCss scriptJs authorId authorName '
+               'authorEmail creatorId creatorName creatorEmail')
 
 
 class PageMixin(WikiJsProtocol):
@@ -67,21 +73,40 @@ class PageMixin(WikiJsProtocol):
         params = dict(limit=limit, orderBy=order_by, orderByDirection=direction,
                       tags=tags, locale=locale, creatorId=creator_id, authorId=author_id)
         raise NotImplementedError
+
+    def fetch_page(self, id: int) -> 'Dict[str, Any]':
+        query = '''
+            query Page($id: Int!) {
+                pages {
+                    single (id: $id) {
+                        %s
+                    }
+                }
+            }
+        ''' % PAGE_FIELDS
+
+        params = dict(id=id)
+
+        return self.execute(query, params)['pages']['single']
+
 # endregion
 
 # region PAGE MUTATION
-    # TODO: publishEndDate, publishStartDate, scriptCss, scriptJs
     def create_page(
         self,
-        title:        str,
-        content:      str,
-        description:  str,
-        editor:       str,
-        is_published: bool,
-        is_private:   bool,
-        locale:       str,
-        path:         str,
-        tags:         'List[str]' = [],
+        title:              str,
+        content:            str,
+        description:        str,
+        editor:             str,
+        is_published:       bool,
+        is_private:         bool,
+        locale:             str,
+        path:               str,
+        publish_end_date:   'Optional[str]' = None,
+        publish_start_date: 'Optional[str]' = None,
+        script_css:         'Optional[str]' = None,
+        script_js:          'Optional[str]' = None,
+        tags:               'List[str]' = [],
     ) -> 'Dict[str, Any]':
         mutation = '''
             mutation Page(
@@ -92,6 +117,10 @@ class PageMixin(WikiJsProtocol):
                 $isPrivate: Boolean!,
                 $locale: String!,
                 $path: String!,
+                $publishEndDate: Date,
+                $publishStartDate: Date,
+                $scriptCss: String,
+                $scriptJs: String,
                 $tags: [String]!,
                 $title: String!
             ) {
@@ -104,6 +133,10 @@ class PageMixin(WikiJsProtocol):
                         isPrivate: $isPrivate,
                         locale: $locale,
                         path: $path,
+                        publishEndDate: $publishEndDate,
+                        publishStartDate: $publishStartDate,
+                        scriptCss: $scriptCss,
+                        scriptJs: $scriptJs,
                         tags: $tags,
                         title: $title
                     ) {
@@ -126,35 +159,99 @@ class PageMixin(WikiJsProtocol):
         params = dict(
             title=title, content=content, description=description,
             editor=editor, isPublished=is_published, isPrivate=is_private,
-            locale=locale, path=path, tags=tags
+            locale=locale, path=path, publishEndDate=publish_end_date,
+            publishStartDate=publish_start_date, scriptCss=script_css,
+            scriptJs=script_js, tags=tags,
         )
 
         resp = self.execute(mutation, params)['pages']['create']
         self.check_response_result(resp['responseResult'])
         return resp['page']
 
-    # TODO: publishEndDate, publishStartDate, scriptCss, scriptJs
     def update_page(
         self,
-        title:        str,
-        content:      str,
-        description:  str,
-        editor:       str,
-        is_published: bool,
-        is_private:   bool,
-        locale:       str,
-        path:         str,
-        tags:         'List[str]' = [],
+        id:                 int,
+        title:              'Unforced[str]' = unset,
+        content:            'Unforced[str]' = unset,
+        description:        'Unforced[str]' = unset,
+        editor:             'Unforced[str]' = unset,
+        is_published:       'Unforced[bool]' = unset,
+        is_private:         'Unforced[bool]' = unset,
+        locale:             'Unforced[str]' = unset,
+        path:               'Unforced[str]' = unset,
+        publish_end_date:   'Nullable[str]' = unset,
+        publish_start_date: 'Nullable[str]' = unset,
+        script_css:         'Nullable[str]' = unset,
+        script_js:          'Nullable[str]' = unset,
+        tags:               'Unforced[List[str]]' = unset,
     ) -> 'Dict[str, Any]':
         mutation = '''
+            mutation Page(
+                $id: Int!,
+                $content: String,
+                $description: String,
+                $editor: String,
+                $isPublished: Boolean,
+                $isPrivate: Boolean,
+                $locale: String,
+                $path: String,
+                $publishEndDate: Date,
+                $publishStartDate: Date,
+                $scriptCss: String,
+                $scriptJs: String,
+                $tags: [String],
+                $title: String
+            ) {
+                pages {
+                    update (
+                        id: $id,
+                        content: $content,
+                        description: $description,
+                        editor: $editor,
+                        isPublished: $isPublished,
+                        isPrivate: $isPrivate,
+                        locale: $locale,
+                        path: $path,
+                        publishEndDate: $publishEndDate,
+                        publishStartDate: $publishStartDate,
+                        scriptCss: $scriptCss,
+                        scriptJs: $scriptJs,
+                        tags: $tags,
+                        title: $title
+                    ) {
+                        responseResult {
+                            succeeded,
+                            errorCode,
+                            slug,
+                            message
+                        },
+                        page {
+                            id,
+                            path,
+                            title
+                        }
+                    }
+                }
+            }
         '''
 
         params = dict(
-            title=title, content=content, description=description,
+            id=id, title=title, content=content, description=description,
             editor=editor, isPublished=is_published, isPrivate=is_private,
-            locale=locale, path=path, tags=tags
+            locale=locale, path=path, publishEndDate=publish_end_date,
+            publishStartDate=publish_start_date, scriptCss=script_css,
+            scriptJs=script_js, tags=tags,
         )
-        raise NotImplementedError
+
+        if any(v is unset for v in params.values()):
+            page = self.fetch_page(id)
+            for field, value in params.items():
+                if value is unset:
+                    params[field] = page[field]
+
+        resp = self.execute(mutation, params)['pages']['update']
+        self.check_response_result(resp['responseResult'])
+        return resp['page']
 
     def convert_page(self, id: int, editor: str) -> Any:
         mutation = '''

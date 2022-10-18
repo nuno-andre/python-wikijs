@@ -1,4 +1,4 @@
-from typing import Protocol, TYPE_CHECKING
+from typing import Any, Union, Protocol, TypeVar, TYPE_CHECKING
 from enum import Enum
 
 
@@ -69,3 +69,13 @@ if TYPE_CHECKING:
 
 else:
     class WikiJsProtocol(): ...
+
+
+T = TypeVar('T')
+
+class Unset: ...
+
+Unforced = Union[Unset, T]
+Nullable = Union[Unset, None, T]
+
+unset = Unset()

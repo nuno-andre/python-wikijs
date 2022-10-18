@@ -1,5 +1,6 @@
 from typing import Any, TYPE_CHECKING
 from functools import cached_property
+import logging
 
 from gql import gql, Client
 
@@ -17,6 +18,8 @@ from .user import UserMixin
 if TYPE_CHECKING:
     from typing import Dict, Optional
 
+log = logging.getLogger(__name__)
+
 
 class WikiJs(AssetMixin, PageMixin, SystemMixin, UserMixin):
     def __init__(self, endpoint, api_key) -> None:
@@ -30,6 +33,7 @@ class WikiJs(AssetMixin, PageMixin, SystemMixin, UserMixin):
         return Client(transport=transport, fetch_schema_from_transport=True)
 
     def execute(self, query: str, params: 'Optional[Dict[str, Any]]' = None) -> Any:
+        log.debug('Query: %s / Params: %s', query, params)
         try:
             return self.client.execute(gql(query), variable_values=params)
         except GraphQLError as e:

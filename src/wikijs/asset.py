@@ -7,7 +7,7 @@ if TYPE_CHECKING:
 class AssetMixin(WikiJsProtocol):
 
 # region ASSET QUERY
-    def list_assets(self, folder_id: int, kind: AssetKind) -> Any:
+    def list_assets(self, folder_id: int, kind: 'AssetKind') -> Any:
         query = '''
         '''
 
